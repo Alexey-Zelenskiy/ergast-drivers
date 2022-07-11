@@ -7,12 +7,17 @@ export default StyleSheet.create({
     paddingVertical: 20,
     flex: 1,
     justifyContent: 'flex-start',
-    flexDirection: 'row',
+    flexDirection: 'column',
     borderRadius: 20,
     marginBottom: 10
   },
   text: {
     color: 'black',
+    fontSize: 16,
+    lineHeight: 19
+  },
+  link: {
+    color: 'blue',
     fontSize: 16,
     lineHeight: 19
   }

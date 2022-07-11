@@ -7,6 +7,7 @@ import { RootStackParamList, RootStackScreenProps } from '../types';
 export type DriversStackParamList = {
   DriversList: undefined;
   DriverInfo: { driver: Driver };
+  SprintResult: undefined;
 };
 
 export type DriversStackScreenProps<T extends keyof DriversStackParamList> =

@@ -6,3 +6,9 @@ export type Driver = {
   nationality: string;
   url: string;
 };
+
+export type DriverPayload = {
+  DriverTable: {
+    Drivers: Driver[];
+  };
+};

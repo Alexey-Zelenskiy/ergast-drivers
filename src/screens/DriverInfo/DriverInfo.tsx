@@ -5,7 +5,9 @@ import { Driver } from '../../common/types/Driver';
 import { DriversStackScreenProps } from '../../navigation/DriversStack/types';
 import styles from './styles';
 
-const DriverInfo = ({ route }: DriversStackScreenProps<'DriverInfo'>) => {
+const DriverInfo: React.FC<DriversStackScreenProps<'DriverInfo'>> = ({
+  route
+}) => {
   const params = useMemo(() => {
     return (
       route.params ||

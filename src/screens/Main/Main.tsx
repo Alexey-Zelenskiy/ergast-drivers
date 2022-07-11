@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import {
   FlatList,
   ListRenderItem,
@@ -9,30 +15,39 @@ import {
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSelector } from 'react-redux';
 import { Driver } from '../../common/types/Driver';
-import { getDrivers, getIsLoading } from '../../modules/reducers/driver';
-import { getDriversList } from '../../modules/reducers/driver/reducer';
+import { structuredSelector } from '../../modules/reducers/driver';
+import {
+  fetchDrivers,
+  fetchSprintResults,
+  setOffsetNumber
+} from '../../modules/reducers/driver/reducer';
 import { DriversStackScreenProps } from '../../navigation/DriversStack/types';
-import { useTypedDispatch } from '../../store';
+import { RootState, useTypedDispatch } from '../../store';
 import DriverItem from './components/DriverItem/DriverItem';
 
 import styles from './styles';
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
-const Main = ({ navigation }: DriversStackScreenProps<'DriversList'>) => {
-  const dispatch = useTypedDispatch();
+const keyExtractor = (item: Driver) => item.driverId;
 
-  const [limit, setLimit] = useState<number>(1);
+const Main: React.FC<DriversStackScreenProps<'DriversList'>> = ({
+  navigation
+}) => {
+  const dispatch = useTypedDispatch();
   const [
     onEndReachedCalledDuringMomentum,
     setOnEndReachedCalledDuringMomentum
   ] = useState<boolean>(false);
-  const drivers = useSelector(getDrivers);
-  const isLoading = useSelector(getIsLoading);
+
+  const { drivers, isLoading } = useSelector((state: RootState) =>
+    structuredSelector(state)
+  );
 
   const refList = useRef<FlatList>(null);
   const renderDriverItem: ListRenderItem<Driver> = useCallback(
     ({ item, index }) => {
+      const { driverId } = item;
       return (
         <DriverItem
           item={item}
@@ -40,27 +55,32 @@ const Main = ({ navigation }: DriversStackScreenProps<'DriversList'>) => {
           onPress={() => {
             goToDriverInfo(item);
           }}
+          goToResultsInfo={() => {
+            goToResultsInfo(driverId);
+          }}
         />
       );
     },
     []
   );
 
-  const renderFooter = () => <View>{isLoading && <ActivityIndicator />}</View>;
-
-  const renderEmpty = () => (
-    <Text style={styles.text}>The list is empty :(</Text>
+  const renderFooter = useMemo(
+    () => <View>{isLoading && <ActivityIndicator />}</View>,
+    []
   );
 
-  const keyExtractor = useCallback((item) => item.driverId, []);
+  const renderEmpty = useMemo(
+    () => <Text style={styles.text}>The list is empty :(</Text>,
+    []
+  );
 
   const fetchMoreData = useCallback(() => {
     if (onEndReachedCalledDuringMomentum) {
-      setLimit(limit + 1);
-      dispatch(getDriversList(limit, true));
+      dispatch(setOffsetNumber());
+      dispatch(fetchDrivers({ refresh: false }));
     }
     setOnEndReachedCalledDuringMomentum(false);
-  }, [limit, onEndReachedCalledDuringMomentum]);
+  }, [onEndReachedCalledDuringMomentum, dispatch]);
 
   const goToDriverInfo = useCallback(
     (driver: Driver) => {
@@ -69,13 +89,21 @@ const Main = ({ navigation }: DriversStackScreenProps<'DriversList'>) => {
     [navigation]
   );
 
+  const goToResultsInfo = useCallback(
+    async (driverId: string) => {
+      await dispatch(fetchSprintResults(driverId));
+      navigation.navigate('SprintResult');
+    },
+    [navigation, dispatch]
+  );
+
   const onRefresh = useCallback(() => {
-    dispatch(getDriversList());
-    setLimit(1);
-  }, []);
+    dispatch(setOffsetNumber(1));
+    dispatch(fetchDrivers({ refresh: true }));
+  }, [dispatch]);
 
   useEffect(() => {
-    dispatch(getDriversList());
+    dispatch(fetchDrivers({ refresh: false }));
   }, []);
 
   return (
@@ -86,7 +114,6 @@ const Main = ({ navigation }: DriversStackScreenProps<'DriversList'>) => {
         ref={refList}
         keyExtractor={keyExtractor}
         data={drivers}
-        extraData={drivers}
         renderItem={renderDriverItem}
         showsVerticalScrollIndicator={false}
         ListFooterComponent={renderFooter}

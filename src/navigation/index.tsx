@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { ActivityIndicator, StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import RNBootSplash from 'react-native-bootsplash';
 import { NavigationContainer, NavigationState } from '@react-navigation/native';
@@ -10,11 +10,17 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
 import { AsyncStorageKeys } from '../common/asyncStorageKeys';
 import DriversStackNavigator from './DriversStack';
+import { structuredSelector } from '../modules/reducers/driver';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 const RootStackNavigator = () => {
-  const [isReady, setIsReady] = useState(false);
+  const { error } = useSelector((state: RootState) =>
+    structuredSelector(state)
+  );
+
   const [initialState, setInitialState] = useState<NavigationState | undefined>(
     undefined
   );
@@ -27,7 +33,7 @@ const RootStackNavigator = () => {
   }, []);
 
   useEffect(() => {
-    if (!isReady) {
+    if (!error) {
       (async () => {
         try {
           const savedStateString = await AsyncStorage.getItem(
@@ -40,17 +46,16 @@ const RootStackNavigator = () => {
             setInitialState(state);
           }
         } finally {
-          setIsReady(true);
         }
       })();
     }
-  }, [isReady]);
+  }, [error]);
 
   const screenOption = {
     headerShown: false
   };
 
-  return isReady ? (
+  return !error ? (
     <NavigationContainer
       initialState={initialState}
       onStateChange={onStateChange}
@@ -64,10 +69,15 @@ const RootStackNavigator = () => {
     </NavigationContainer>
   ) : (
     <Animated.View
-      style={{ ...StyleSheet.absoluteFillObject }}
-      entering={isReady ? FadeIn : undefined}
+      style={{
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}
+      entering={FadeIn}
       onLayout={() => RNBootSplash.hide()}
     >
+      <Text>{error}</Text>
       <ActivityIndicator size={'large'} />
     </Animated.View>
   );
